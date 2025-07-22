@@ -17,13 +17,24 @@ function Calendar({ currentWeekStart }) {
         dayNumbers.push(dayDate.getDate().toString()); // No leading zeros
     }
 
+    // Determine which column is today (if any)
+    const today = new Date();
+    const todayIndex = dayNumbers.findIndex((dayNum, index) => {
+        const dayDate = new Date(currentWeekStart);
+        dayDate.setDate(currentWeekStart.getDate() + index);
+        return dayDate.toDateString() === today.toDateString();
+    });
+
     return (
         <div className="calendar">
             {/* Header row with time and weekday columns */}
             <div className="calendar-header">
                 <div className="time-header">Time</div>
                 {weekdays.map((day, index) => (
-                    <div key={day} className="day-header">
+                    <div 
+                        key={day} 
+                        className={`day-header ${index === todayIndex ? 'today-header' : ''}`}
+                    >
                         <div className="day-name">{day}</div>
                         <div className="day-number">{dayNumbers[index]}</div>
                     </div>
@@ -34,8 +45,11 @@ function Calendar({ currentWeekStart }) {
             {timeSlots.map((time) => (
                 <div key={time} className="calendar-row">
                     <div className="time-slot">{time}</div>
-                    {weekdays.map((day) => (
-                        <div key={`${day}-${time}`} className="calendar-cell">
+                    {weekdays.map((day, index) => (
+                        <div 
+                            key={`${day}-${time}`} 
+                            className={`calendar-cell ${index === todayIndex ? 'today-cell' : ''}`}
+                        >
                             {/* Appointment slots will go here */}
                         </div>
                     ))}

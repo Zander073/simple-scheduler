@@ -132,4 +132,12 @@ body {
 
 .calendar-cell:last-child {
     border-right: none;
+}
+
+.today-header {
+    background-color: rgba(3, 2, 19, 0.1);
+}
+
+.today-cell {
+    background-color: rgba(3, 2, 19, 0.05);
 } 
