@@ -24,6 +24,12 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        # Clear existing data
+        self.stdout.write('Clearing existing data...')
+        User.objects.filter(username__startswith='clinician').delete()
+        Client.objects.all().delete()
+        Appointment.objects.all().delete()
+
         self.stdout.write('Seeding database...')
 
         # Create clinicians
@@ -98,21 +104,23 @@ class Command(BaseCommand):
         # Common client preferences (day of week, time preferences)
         # Note: 0=Monday, 1=Tuesday, 2=Wednesday, 3=Thursday, 4=Friday (no weekends)
         client_preferences = [
-            {'days': [0, 1], 'times': [9, 10, 11]},      # Monday/Tuesday mornings
-            {'days': [1, 2], 'times': [14, 15, 16]},     # Tuesday/Wednesday afternoons
-            {'days': [2, 3], 'times': [10, 11, 12]},     # Wednesday/Thursday mid-morning
-            {'days': [3, 4], 'times': [13, 14, 15]},     # Thursday/Friday afternoons
-            {'days': [0, 4], 'times': [9, 10, 16]},      # Monday/Friday bookends
-            {'days': [1, 3], 'times': [11, 12, 13]},     # Tuesday/Thursday lunch time
-            {'days': [0, 2, 4], 'times': [10, 11, 14]},  # Mon/Wed/Fri mixed
-            {'days': [1, 2, 3], 'times': [9, 10, 11, 14, 15]},  # Tue/Wed/Thu flexible
+            {'days': [0, 1], 'times': [9, 10, 11], 'description': 'Prefers Monday/Tuesday mornings'},
+            {'days': [1, 2], 'times': [14, 15, 16], 'description': 'Prefers Tuesday/Wednesday afternoons'},
+            {'days': [2, 3], 'times': [10, 11, 12], 'description': 'Prefers Wednesday/Thursday mid-morning'},
+            {'days': [3, 4], 'times': [13, 14, 15], 'description': 'Prefers Thursday/Friday afternoons'},
+            {'days': [0, 4], 'times': [9, 10, 16], 'description': 'Prefers Monday/Friday bookends'},
+            {'days': [1, 3], 'times': [11, 12, 13], 'description': 'Prefers Tuesday/Thursday lunch time'},
+            {'days': [0, 2, 4], 'times': [10, 11, 14], 'description': 'Prefers Monday/Wednesday/Friday mixed'},
+            {'days': [1, 2, 3], 'times': [9, 10, 11, 14, 15], 'description': 'Prefers Tuesday/Wednesday/Thursday flexible'},
         ]
 
         appointments_created = 0
+        client_preferences_map = {}  # Track preferences for each client
 
         for client in clients:
             # Assign random preferences to each client
             preferences = random.choice(client_preferences)
+            client_preferences_map[client.id] = preferences
 
             # Create 15-30 appointments per client over the 7-week period
             num_appointments = random.randint(15, 30)
@@ -154,6 +162,13 @@ class Command(BaseCommand):
                         clinician=client.clinician
                     )
                     appointments_created += 1
+
+        # Update client memos with their scheduling preferences
+        for client in clients:
+            if client.id in client_preferences_map:
+                preferences = client_preferences_map[client.id]
+                client.memo = preferences['description']
+                client.save()
 
         self.stdout.write(f'Created {appointments_created} appointments')
 
