@@ -44,7 +44,7 @@ function App() {
                 </div>
             </div>
             
-            <AppointmentCalendar />
+            <Calendar currentWeekStart={currentWeekStart} />
         </div>
     );
 }
