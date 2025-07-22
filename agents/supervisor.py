@@ -17,8 +17,10 @@ class SupervisorAgent(BaseAgent):
     @property
     def system_prompt(self) -> str:
         return (
-            "You are a Supervisor Agent. Based on the input state, determine which of the following agents to invoke: "
-            "'optimize_availability', 'learn_preferences', 'suggest_schedule'. "
+            "You are a Supervisor Agent. Based on the input state, determine which of the following agents to invoke:\n"
+            "- 'optimize_availability': Use when you need to optimize a clinician's workload, redistribute appointments, or suggest better availability times for a clinician\n"
+            "- 'learn_preferences': Use when you need to analyze a client's appointment history to understand their scheduling patterns and preferences\n"
+            "- 'suggest_schedule': Use when you need to suggest a specific appointment time for a client to book a new appointment, especially when the request mentions 'book', 'schedule', 'appointment time', or 'suggest time'\n"
             "Respond with a JSON object containing exactly these fields: "
             '{"selected_agent": "agent_name", "reasoning": "explanation"}'
         )
@@ -32,22 +34,17 @@ class SupervisorAgent(BaseAgent):
                 {"role": "user", "content": state}
             ]
         ).content[0].text
-        
-        # Try to parse the JSON response
+
         try:
-            # First try direct parsing
             return SupervisorDecision.model_validate_json(output)
         except Exception as e:
-            # Try to extract JSON from the response
             try:
-                # Look for JSON in the response
                 import re
                 json_match = re.search(r'\{.*\}', output, re.DOTALL)
                 if json_match:
                     json_str = json_match.group()
                     parsed_json = json.loads(json_str)
                     
-                    # Handle field mapping
                     if 'agent_to_invoke' in parsed_json:
                         parsed_json['selected_agent'] = parsed_json.pop('agent_to_invoke')
                     if 'rationale' in parsed_json:
@@ -57,7 +54,6 @@ class SupervisorAgent(BaseAgent):
                 else:
                     raise ValueError("No JSON found in response")
             except Exception as e2:
-                # Fallback: create a default decision
                 return SupervisorDecision(selected_agent="optimize_availability", reasoning="Fallback decision due to parsing error")
 
     def handle_request(self, state: str, **kwargs):

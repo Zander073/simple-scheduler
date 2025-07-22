@@ -28,34 +28,13 @@ def demo_availability_optimizer():
     clinician = Client.objects.first().clinician
     print(f"Analyzing workload for: {clinician.get_full_name()}")
 
-    # Get current week's appointments
-    start_of_week = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
-    start_of_week = start_of_week - timedelta(days=start_of_week.weekday())
-    end_of_week = start_of_week + timedelta(days=7)
-
-    current_schedule = list(
-        Appointment.objects.filter(
-            clinician=clinician,
-            start_time__gte=start_of_week,
-            start_time__lt=end_of_week
-        ).values_list('start_time', flat=True)
-    )
-
-    # Convert to ISO format for the agent
-    current_schedule_iso = [dt.isoformat() for dt in current_schedule]
-
-    print(f"Current week's appointments: {len(current_schedule)}")
-    for appt in current_schedule:
-        print(f"  - {appt.strftime('%Y-%m-%d %H:%M')}")
-
     # Use the supervisor to route to availability optimizer
-    state = f"The clinician {clinician.get_full_name()} has an unbalanced workload this week with {len(current_schedule)} appointments."
+    state = f"The clinician {clinician.get_full_name()} has an unbalanced workload this week."
 
     supervisor = SupervisorAgent()
     result = supervisor.handle_request(
         state,
-        clinician_id=clinician.id,
-        current_schedule=current_schedule_iso
+        clinician_id=clinician.id
     )
 
     print(f"\nOptimization Result:")
@@ -74,28 +53,13 @@ def demo_preference_learner():
     client = Client.objects.first()
     print(f"Learning preferences for: {client.full_name}")
     
-    # Get client's appointment history
-    appointments = Appointment.objects.filter(client=client).order_by('start_time')
-    
-    # Create a history summary
-    history_parts = []
-    for appt in appointments[:10]:  # Last 10 appointments
-        day_name = appt.start_time.strftime('%A')
-        time_str = appt.start_time.strftime('%H:%M')
-        history_parts.append(f"{day_name} at {time_str}")
-    
-    history = f"Client has {appointments.count()} total appointments. Recent schedule: {', '.join(history_parts)}. Memo: {client.memo}"
-    
-    print(f"Client History: {history}")
-    
     # Use the supervisor to route to preference learner
     state = f"Client {client.full_name} has been scheduling appointments and we need to understand their preferences."
     
     supervisor = SupervisorAgent()
     result = supervisor.handle_request(
         state, 
-        client_id=client.id, 
-        history=history
+        client_id=client.id
     )
     
     print(f"\nPreference Learning Result:")
@@ -114,46 +78,13 @@ def demo_scheduling_agent():
     client = Client.objects.first()
     print(f"Scheduling for: {client.full_name}")
     
-    # Get available time slots (next week, business hours)
-    start_date = timezone.now().date() + timedelta(days=7)  # Next week
-    end_date = start_date + timedelta(days=7)
-    
-    # Generate available slots (9 AM to 5 PM, weekdays)
-    available_slots = []
-    current_date = start_date
-    
-    while current_date <= end_date:
-        if current_date.weekday() < 5:  # Monday to Friday
-            for hour in range(9, 17):  # 9 AM to 5 PM
-                slot_time = datetime.combine(current_date, datetime.min.time().replace(hour=hour))
-                slot_time = timezone.make_aware(slot_time)
-                
-                # Check if slot is available (no existing appointment)
-                existing = Appointment.objects.filter(
-                    clinician=client.clinician,
-                    start_time=slot_time
-                ).exists()
-                
-                if not existing:
-                    available_slots.append(slot_time.isoformat())
-        
-        current_date += timedelta(days=1)
-    
-    # Get client preferences from memo
-    preferences = [client.memo] if client.memo else ["No specific preferences noted"]
-    
-    print(f"Available slots: {len(available_slots)}")
-    print(f"Client preferences: {preferences}")
-    
     # Use the supervisor to route to scheduling agent
-    state = f"Client {client.full_name} needs to book a new appointment. We have available time slots and know their preferences. We need to suggest the best appointment time."
+    state = f"Client {client.full_name} needs to book a new appointment. We have available time slots and want to suggest the best appointment time for them to book."
     
     supervisor = SupervisorAgent()
     result = supervisor.handle_request(
         state, 
-        client_id=client.id, 
-        availability=available_slots[:10],  # First 10 available slots
-        preferences=preferences
+        client_id=client.id
     )
     
     print(f"\nScheduling Result:")
