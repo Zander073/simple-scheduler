@@ -19,3 +19,9 @@ dependencies = [
     "python-dotenv",
     "pydantic-ai-slim[anthropic]"
 ]
+
+[dependency-groups]
+dev = [
+    "django-extensions>=4.1",
+    "ipython>=9.4.0",
+]
