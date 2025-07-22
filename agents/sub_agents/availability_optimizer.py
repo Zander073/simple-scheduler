@@ -1,22 +1,19 @@
 from agents.base import BaseAgent
 from agents.claude_client import claude_client
-from agents.schemas import ScheduleSuggestion
+from agents.schemas import AvailabilityOptimization
 import json
 
-class SchedulingAgent(BaseAgent):
+class AvailabilityOptimizer(BaseAgent):
     @property
     def system_prompt(self) -> str:
         return (
-            "You are a Scheduling Agent. Specialize in appointment scheduling and slot optimization. "
+            "You are an Availability Optimizer Agent. Optimize therapist availability and workload distribution. "
             "Respond with a JSON object containing exactly these fields: "
-            '{"client_id": number, "proposed_time": "time", "confidence": number, "reasoning": "explanation"}'
+            '{"clinician_id": number, "suggested_availability": ["time1", "time2"], "reasoning": "explanation"}'
         )
 
-    def infer(self, client_id: int, availability: list, preferences: list):
-        prompt = (
-            f"Client {client_id} is available at {availability}. Preferences: {preferences}. "
-            "Suggest the best time slot with confidence."
-        )
+    def infer(self, clinician_id: int, current_schedule: list):
+        prompt = f"Clinician {clinician_id} has schedule: {current_schedule}. Suggest optimized availability."
         output = claude_client.messages.create(
             model="claude-3-5-haiku-20241022",
             max_tokens=1024,
@@ -25,9 +22,9 @@ class SchedulingAgent(BaseAgent):
                 {"role": "user", "content": prompt}
             ]
         ).content[0].text
-
+        
         try:
-            return ScheduleSuggestion.model_validate_json(output)
+            return AvailabilityOptimization.model_validate_json(output)
         except Exception as e:
             try:
                 import re
@@ -37,12 +34,12 @@ class SchedulingAgent(BaseAgent):
                     parsed_json = json.loads(json_str)
                     
                     # Handle field mapping
-                    if 'clientId' in parsed_json:
-                        parsed_json['client_id'] = parsed_json.pop('clientId')
-                    if 'proposedTime' in parsed_json:
-                        parsed_json['proposed_time'] = parsed_json.pop('proposedTime')
+                    if 'clinicianId' in parsed_json:
+                        parsed_json['clinician_id'] = parsed_json.pop('clinicianId')
+                    if 'suggestedAvailability' in parsed_json:
+                        parsed_json['suggested_availability'] = parsed_json.pop('suggestedAvailability')
                     
-                    return ScheduleSuggestion(**parsed_json)
+                    return AvailabilityOptimization(**parsed_json)
                 else:
                     raise ValueError("No JSON found in response")
             except Exception as e2:

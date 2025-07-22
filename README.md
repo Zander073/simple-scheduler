@@ -19,3 +19,11 @@ function dpy() {
 * Generate migrations: `dpy makemigrations`
 * Run migrations: `dpy migrate`
 * Seed data: `dpy seed_data`
+
+## Run the agent demo
+Note: make sure you have a `CLAUDE_API_KEY` defined in your `.env`
+
+Run the demo:
+```
+uv run demo_agents.py
+```
