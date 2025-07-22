@@ -1,0 +1,144 @@
+.header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 30px;
+}
+
+.header-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+
+    h1 {
+        color: #333;
+        margin: 0;
+    }
+
+    p {
+        color: #666;
+        font-size: 18px;
+        margin: 0;
+    }
+}
+
+.header-actions {
+    display: flex;
+    gap: 8px;
+
+    .nav-button {
+        width: 32px;
+        height: 32px;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        padding: 0;
+    }
+
+    .nav-button:hover {
+        background: #f8f9fa;
+    }
+}
+
+.calendar {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.calendar-header {
+    display: grid;
+    grid-template-columns: 100px repeat(5, 1fr);
+    background: #f8f9fa;
+    border-bottom: 1px solid #ddd;
+}
+
+.time-header {
+    padding: 12px;
+    font-weight: 600;
+    color: #333;
+    border-right: 1px solid #ddd;
+    display: flex;
+    align-items: center;
+}
+
+.day-header {
+    padding: 8px 12px;
+    text-align: center;
+    border-right: 1px solid #ddd;
+}
+
+.day-header:last-child {
+    border-right: none;
+}
+
+.day-name {
+    font-weight: 600;
+    color: #333;
+    font-size: 14px;
+}
+
+.day-number {
+    color: #666;
+    font-size: 12px;
+    margin-top: 2px;
+}
+
+.calendar-row {
+    display: grid;
+    grid-template-columns: 100px repeat(5, 1fr);
+    border-bottom: 1px solid #ddd;
+}
+
+.calendar-row:last-child {
+    border-bottom: none;
+}
+
+.time-slot {
+    padding: 12px;
+    font-size: 14px;
+    color: #666;
+    border-right: 1px solid #ddd;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    background: #f8f9fa;
+}
+
+.calendar-cell {
+    min-height: 60px;
+    border-right: 1px solid #ddd;
+    padding: 8px;
+}
+
+.calendar-cell:last-child {
+    border-right: none;
+}
+
+.today-header {
+    background-color: rgba(3, 2, 19, 0.1);
+}
+
+.today-cell {
+    background-color: rgba(3, 2, 19, 0.05);
+}
+
+.appointment {
+    background-color: rgba(0, 123, 255, 0.1);
+    color: #007bff;
+    padding: 4px 8px;
+    border-radius: 8px;
+    border-left: 4px solid #007bff;
+    font-size: 12px;
+    height: calc(100% - 8px);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: flex-start;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+} 
