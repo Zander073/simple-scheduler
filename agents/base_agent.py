@@ -15,6 +15,22 @@ load_dotenv()
 class BaseAgent:
     """Base class for all calendar management agents"""
     
+    # Shared response format template
+    RESPONSE_FORMAT = """{
+    "suggestions": [
+        {
+            "start_time": "2024-01-15T10:00:00",
+            "duration_in_minutes": 60,
+            "client_id": 1,
+            "clinician_id": 1,
+            "confidence": 0.95,
+            "reason": "Brief explanation of recommendation"
+        }
+    ],
+    "explanation": "Summary of analysis and recommendations",
+    "requires_confirmation": true
+}"""
+    
     def __init__(self, name: str, description: str):
         """
         Initialize the base agent
@@ -38,8 +54,10 @@ class BaseAgent:
         return f"""You are {self.name}, a specialized AI agent for calendar management. 
 {self.description}
 
-You should be helpful, professional, and focused on your specific area of expertise.
-Always provide clear, actionable responses."""
+Always respond with valid JSON in this exact format:
+{self.RESPONSE_FORMAT}
+
+Return only the JSON object, no additional text."""
     
     def chat(self, message: str, context: Optional[Dict[str, Any]] = None) -> str:
         """

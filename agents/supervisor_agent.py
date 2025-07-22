@@ -18,13 +18,7 @@ class SupervisorAgent(BaseAgent):
     def __init__(self):
         super().__init__(
             name="Supervisor Scheduling Agent",
-            description="""I am the supervisor coordinator for the therapy scheduling system.
-I coordinate with specialized sub-agents to handle all aspects of appointment management:
-- Scheduling Agent: Handles appointment scheduling and slot optimization
-- Availability Optimizer: Manages therapist availability and calendar optimization
-- Preference Learner: Learns and adapts to client and therapist preferences
-
-I provide a unified interface for the Django app to interact with all scheduling functionality."""
+            description="I coordinate specialized sub-agents for appointment management, providing a unified interface for scheduling, optimization, and preference learning."
         )
         
         # Initialize sub-agents
@@ -35,16 +29,7 @@ I provide a unified interface for the Django app to interact with all scheduling
     def get_system_prompt(self) -> str:
         return f"""{super().get_system_prompt()}
 
-As a supervisor, I:
-1. Coordinate between specialized sub-agents
-2. Aggregate responses from multiple agents
-3. Prioritize and filter suggestions
-4. Provide unified interface for external systems
-5. Handle complex multi-agent scenarios
-6. Ensure consistent response format
-7. Manage agent communication and context
-
-I return aggregated structured responses from all relevant sub-agents."""
+I coordinate specialized sub-agents for appointment management. I aggregate responses, prioritize suggestions, and provide unified interfaces for external systems."""
 
     def process_request(self, request_type: str, request_data: Dict[str, Any], context: Optional[Dict[str, Any]] = None) -> SupervisorResponse:
         """

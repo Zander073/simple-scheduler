@@ -15,30 +15,13 @@ class SchedulingAgent(BaseAgent):
     def __init__(self):
         super().__init__(
             name="Scheduling Agent",
-            description="""I specialize in appointment scheduling and slot optimization. 
-I can:
-- Analyze scheduling requests and find optimal slots
-- Consider client preferences and therapist availability
-- Handle complex scheduling scenarios
-- Optimize for therapist workload and client satisfaction
-- Suggest alternative times when preferred slots aren't available
-- Consider travel time and session duration
-- Balance urgent vs. routine appointments
-- Handle recurring appointment patterns"""
+            description="I find optimal appointment slots, consider preferences and availability, and suggest alternative times when needed."
         )
     
     def get_system_prompt(self) -> str:
         return f"""{super().get_system_prompt()}
 
-When scheduling appointments, I:
-1. Analyze the request and extract key information
-2. Consider client preferences and history
-3. Check therapist availability and workload
-4. Suggest optimal time slots with reasoning
-5. Provide structured response with specific suggestions
-6. Include confidence levels and explanations
-
-I return structured JSON responses with appointment suggestions."""
+I specialize in appointment scheduling and slot optimization. I analyze requests, consider preferences and availability, and suggest optimal time slots with confidence levels."""
 
     def schedule_appointment(self, request: str, context: Optional[Dict[str, Any]] = None) -> AgentResponse:
         """

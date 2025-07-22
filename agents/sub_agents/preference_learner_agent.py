@@ -15,31 +15,13 @@ class PreferenceLearnerAgent(BaseAgent):
     def __init__(self):
         super().__init__(
             name="Preference Learner Agent",
-            description="""I specialize in learning and adapting to client and therapist preferences. 
-I can:
-- Analyze scheduling patterns and preferences over time
-- Learn from feedback and satisfaction data
-- Adapt recommendations based on learned preferences
-- Predict future preferences and needs
-- Optimize scheduling based on historical patterns
-- Identify preference changes and trends
-- Suggest personalized scheduling strategies
-- Improve satisfaction through preference matching"""
+            description="I learn from scheduling patterns and feedback to predict preferences, adapt recommendations, and improve satisfaction over time."
         )
     
     def get_system_prompt(self) -> str:
         return f"""{super().get_system_prompt()}
 
-When learning preferences, I:
-1. Analyze historical scheduling patterns and feedback
-2. Identify preference trends and changes over time
-3. Learn from satisfaction data and outcomes
-4. Adapt recommendations based on learned patterns
-5. Predict future preferences and needs
-6. Optimize scheduling strategies based on preferences
-7. Improve satisfaction through better preference matching
-
-I return structured JSON responses with appointment suggestions."""
+I learn and adapt to client and therapist preferences. I analyze patterns, predict future preferences, and optimize scheduling based on historical data and feedback."""
 
     def analyze_therapist_preferences(self, therapist_id: str, appointment_data: List[Dict[str, Any]]) -> AgentResponse:
         """

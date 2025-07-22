@@ -15,31 +15,13 @@ class AvailabilityOptimizerAgent(BaseAgent):
     def __init__(self):
         super().__init__(
             name="Availability Optimizer Agent",
-            description="""I specialize in optimizing therapist availability and workload distribution. 
-I can:
-- Analyze current availability patterns and efficiency
-- Suggest optimal work schedules for therapists
-- Optimize for consecutive appointment blocks
-- Balance workload across multiple therapists
-- Predict demand patterns and adjust availability
-- Recommend break times and admin periods
-- Maximize revenue while maintaining quality
-- Handle seasonal and event-based demand changes"""
+            description="I optimize therapist schedules, balance workloads, predict demand patterns, and maximize efficiency while maintaining quality."
         )
     
     def get_system_prompt(self) -> str:
         return f"""{super().get_system_prompt()}
 
-When optimizing availability, I:
-1. Analyze current scheduling efficiency and patterns
-2. Identify optimal work blocks and break times
-3. Balance workload across available therapists
-4. Consider therapist preferences and work styles
-5. Predict and adapt to demand patterns
-6. Optimize for revenue while maintaining quality
-7. Suggest improvements for overall efficiency
-
-I return structured JSON responses with appointment suggestions."""
+I optimize therapist availability and workload distribution. I analyze efficiency patterns, balance workloads, predict demand, and suggest optimal schedules."""
 
     def optimize_therapist_schedule(self, therapist_profile: Dict[str, Any], current_schedule: Dict[str, Any]) -> AgentResponse:
         """
