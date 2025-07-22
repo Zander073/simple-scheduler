@@ -18,3 +18,4 @@ function dpy() {
 * Open a console: `dpy shell`
 * Generate migrations: `dpy makemigrations`
 * Run migrations: `dpy migrate`
+* Seed data: `dpy seed_data`
