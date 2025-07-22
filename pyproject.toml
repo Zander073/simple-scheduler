@@ -1,7 +1,7 @@
 [project]
 name = "simple-scheduler"
 version = "0.1.0"
-description = "Vista hackathon project"
+description = "A simple appointment scheduler for therapists"
 requires-python = ">=3.12"
 
 dependencies = [
@@ -10,8 +10,10 @@ dependencies = [
     "pydantic",
     "httpx",
     "sqlalchemy",
+    "django>=5.0",
+    "djangorestframework>=3.14.0",
+    "django-cors-headers>=4.3.0",
     "claude-code-sdk",
-    "django==5.2.4",
     "anthropic",
     "python-dotenv",
 ]
