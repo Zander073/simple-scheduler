@@ -10,5 +10,8 @@ dependencies = [
     "pydantic",
     "httpx",
     "sqlalchemy",
+    "claude-code-sdk",
     "django==5.2.4",
+    "anthropic",
+    "python-dotenv",
 ]
