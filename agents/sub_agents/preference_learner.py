@@ -1,22 +1,19 @@
 from agents.base import BaseAgent
 from agents.claude_client import claude_client
-from agents.schemas import ScheduleSuggestion
+from agents.schemas import PreferenceLearning
 import json
 
-class SchedulingAgent(BaseAgent):
+class PreferenceLearner(BaseAgent):
     @property
     def system_prompt(self) -> str:
         return (
-            "You are a Scheduling Agent. Specialize in appointment scheduling and slot optimization. "
+            "You are a Preference Learner Agent. Learn and adapt to client and therapist preferences. "
             "Respond with a JSON object containing exactly these fields: "
-            '{"client_id": number, "proposed_time": "time", "confidence": number, "reasoning": "explanation"}'
+            '{"client_id": number, "learned_preferences": ["pref1", "pref2"], "reasoning": "explanation"}'
         )
 
-    def infer(self, client_id: int, availability: list, preferences: list):
-        prompt = (
-            f"Client {client_id} is available at {availability}. Preferences: {preferences}. "
-            "Suggest the best time slot with confidence."
-        )
+    def infer(self, client_id: int, history: str):
+        prompt = f"Client {client_id} has history: {history}. Learn their scheduling preferences."
         output = claude_client.messages.create(
             model="claude-3-5-haiku-20241022",
             max_tokens=1024,
@@ -27,7 +24,7 @@ class SchedulingAgent(BaseAgent):
         ).content[0].text
 
         try:
-            return ScheduleSuggestion.model_validate_json(output)
+            return PreferenceLearning.model_validate_json(output)
         except Exception as e:
             try:
                 import re
@@ -39,10 +36,10 @@ class SchedulingAgent(BaseAgent):
                     # Handle field mapping
                     if 'clientId' in parsed_json:
                         parsed_json['client_id'] = parsed_json.pop('clientId')
-                    if 'proposedTime' in parsed_json:
-                        parsed_json['proposed_time'] = parsed_json.pop('proposedTime')
+                    if 'learnedPreferences' in parsed_json:
+                        parsed_json['learned_preferences'] = parsed_json.pop('learnedPreferences')
                     
-                    return ScheduleSuggestion(**parsed_json)
+                    return PreferenceLearning(**parsed_json)
                 else:
                     raise ValueError("No JSON found in response")
             except Exception as e2:

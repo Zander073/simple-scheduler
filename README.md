@@ -19,3 +19,8 @@ function dpy() {
 * Generate migrations: `dpy makemigrations`
 * Run migrations: `dpy migrate`
 * Seed data: `dpy seed_data`
+
+## Run the agent demo
+```
+uv run demo_agents.py
+```

@@ -8,6 +8,7 @@ dependencies = [
     "fastapi",
     "uvicorn[standard]",
     "pydantic",
+    "pydantic-ai",
     "httpx",
     "sqlalchemy",
     "django>=5.0",
@@ -16,4 +17,5 @@ dependencies = [
     "claude-code-sdk",
     "anthropic",
     "python-dotenv",
+    "pydantic-ai-slim[anthropic]"
 ]
