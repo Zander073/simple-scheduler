@@ -27,12 +27,47 @@ const getCurrentWeekHeader = () => {
     }
 };
 
+const getWeekDescription = (targetWeekStart) => {
+    const now = new Date();
+    const currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const currentWeekStart = new Date(now);
+    
+    // Go back to Monday of current week
+    const daysToMonday = currentDay === 0 ? 6 : currentDay - 1;
+    currentWeekStart.setDate(now.getDate() - daysToMonday);
+    
+    // Calculate difference in weeks
+    const diffTime = targetWeekStart.getTime() - currentWeekStart.getTime();
+    const diffWeeks = Math.round(diffTime / (1000 * 60 * 60 * 24 * 7));
+    
+    if (diffWeeks === 0) {
+        return "Current week";
+    } else if (diffWeeks === 1) {
+        return "Next week";
+    } else if (diffWeeks === -1) {
+        return "1 week ago";
+    } else if (diffWeeks > 1) {
+        return `${diffWeeks} weeks from now`;
+    } else {
+        return `${Math.abs(diffWeeks)} week${Math.abs(diffWeeks) === 1 ? '' : 's'} ago`;
+    }
+};
+
 function App() {
+    // Get the current week's Monday for comparison
+    let now = new Date();
+    let currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    let currentWeekStart = new Date(now);
+    
+    // Go back to Monday of current week
+    let daysToMonday = currentDay === 0 ? 6 : currentDay - 1;
+    currentWeekStart.setDate(now.getDate() - daysToMonday);
+    
     return (
         <div className="container">
             <div className="header">
                 <h1>{getCurrentWeekHeader()}</h1>
-                <p>Current week</p>
+                <p>{getWeekDescription(currentWeekStart)}</p>
             </div>
             
             <div className="calendar-placeholder">
