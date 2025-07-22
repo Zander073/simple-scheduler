@@ -1,4 +1,4 @@
-function Calendar({ currentWeekStart }) {
+function Calendar({ currentWeekStart, appointments }) {
     // Generate time slots from 9 AM to 4 PM
     const timeSlots = [];
     for (let hour = 9; hour <= 16; hour++) {
@@ -27,6 +27,25 @@ function Calendar({ currentWeekStart }) {
         return dayDate.toDateString() === today.toDateString();
     });
 
+    // Helper function to get appointments for a specific day and time
+    const getAppointmentsForSlot = (dayIndex, timeSlot) => {
+        const dayDate = new Date(currentWeekStart);
+        dayDate.setDate(currentWeekStart.getDate() + dayIndex);
+        
+        // Convert time slot back to hour for comparison
+        const hour = timeSlot.includes('PM') && !timeSlot.includes('12') 
+            ? parseInt(timeSlot.split(':')[0]) + 12 
+            : timeSlot.includes('12 PM') 
+                ? 12 
+                : parseInt(timeSlot.split(':')[0]);
+        
+        return appointments.filter(appointment => {
+            const appointmentDate = new Date(appointment.start_time);
+            return appointmentDate.toDateString() === dayDate.toDateString() && 
+                   appointmentDate.getHours() === hour;
+        });
+    };
+
     return (
         <div className="calendar">
             {/* Header row with time and weekday columns */}
@@ -47,14 +66,21 @@ function Calendar({ currentWeekStart }) {
             {timeSlots.map((time) => (
                 <div key={time} className="calendar-row">
                     <div className="time-slot">{time}</div>
-                    {weekdays.map((day, index) => (
-                        <div 
-                            key={`${day}-${time}`} 
-                            className={`calendar-cell ${index === todayIndex ? 'today-cell' : ''}`}
-                        >
-                            {/* Appointment slots will go here */}
-                        </div>
-                    ))}
+                    {weekdays.map((day, index) => {
+                        const slotAppointments = getAppointmentsForSlot(index, time);
+                        return (
+                            <div 
+                                key={`${day}-${time}`} 
+                                className={`calendar-cell ${index === todayIndex ? 'today-cell' : ''}`}
+                            >
+                                {slotAppointments.map((appointment, appIndex) => (
+                                    <div key={appointment.id} className="appointment">
+                                        {appointment.client.first_name} {appointment.client.last_name}
+                                    </div>
+                                ))}
+                            </div>
+                        );
+                    })}
                 </div>
             ))}
         </div>

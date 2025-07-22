@@ -4,12 +4,41 @@ function App() {
         const now = new Date();
         const currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
         const monday = new Date(now);
-
+        
         // Go back to Monday of current week
         const daysToMonday = currentDay === 0 ? 6 : currentDay - 1;
         monday.setDate(now.getDate() - daysToMonday);
         return monday;
     });
+
+    // State for appointments
+    const [appointments, setAppointments] = React.useState([]);
+    const [loading, setLoading] = React.useState(true);
+    const [error, setError] = React.useState(null);
+
+    // Fetch appointments
+    const fetchAppointments = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const response = await fetch('/api/appointments/');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            setAppointments(data);
+        } catch (err) {
+            setError(err.message);
+            console.error('Error fetching appointments:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Fetch appointments on component mount and when week changes
+    React.useEffect(() => {
+        fetchAppointments();
+    }, []); // Only fetch on mount for now, we can add week dependency later if needed
 
     const goToPreviousWeek = () => {
         const prevWeek = new Date(currentWeekStart);
@@ -22,7 +51,7 @@ function App() {
         nextWeek.setDate(currentWeekStart.getDate() + 7);
         setCurrentWeekStart(nextWeek);
     };
-
+    
     return (
         <div className="container">
             <div className="header">
@@ -44,7 +73,11 @@ function App() {
                 </div>
             </div>
             
-            <Calendar currentWeekStart={currentWeekStart} />
+            {loading && <div className="loading">Loading appointments...</div>}
+            {error && <div className="error">Error loading appointments: {error}</div>}
+            {!loading && !error && (
+                <Calendar currentWeekStart={currentWeekStart} appointments={appointments} />
+            )}
         </div>
     );
 }

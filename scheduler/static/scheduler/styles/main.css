@@ -141,4 +141,38 @@ body {
 
 .today-cell {
     background-color: rgba(3, 2, 19, 0.05);
+}
+
+.appointment {
+    background-color: rgba(0, 123, 255, 0.1);
+    color: #007bff;
+    padding: 4px 8px;
+    border-radius: 8px;
+    border-left: 4px solid #007bff;
+    font-size: 12px;
+    height: calc(100% - 8px);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: flex-start;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.loading {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+    font-size: 16px;
+}
+
+.error {
+    text-align: center;
+    padding: 40px;
+    color: #dc3545;
+    font-size: 16px;
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+    margin: 20px 0;
 } 
