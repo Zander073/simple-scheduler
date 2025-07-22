@@ -10,4 +10,5 @@ dependencies = [
     "pydantic",
     "httpx",
     "sqlalchemy",
+    "django==5.2.4",
 ]
