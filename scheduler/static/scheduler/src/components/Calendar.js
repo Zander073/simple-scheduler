@@ -2,7 +2,9 @@ function Calendar({ currentWeekStart }) {
     // Generate time slots from 9 AM to 4 PM
     const timeSlots = [];
     for (let hour = 9; hour <= 16; hour++) {
-        const time = `${hour}:00`;
+        const time = hour === 12 ? '12:00 PM' : 
+                    hour > 12 ? `${hour - 12}:00 PM` : 
+                    `${hour}:00 AM`;
         timeSlots.push(time);
     }
 

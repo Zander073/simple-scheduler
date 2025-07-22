@@ -68,7 +68,7 @@ body {
 
 .calendar-header {
     display: grid;
-    grid-template-columns: 80px repeat(5, 1fr);
+    grid-template-columns: 100px repeat(5, 1fr);
     background: #f8f9fa;
     border-bottom: 1px solid #ddd;
 }
@@ -106,7 +106,7 @@ body {
 
 .calendar-row {
     display: grid;
-    grid-template-columns: 80px repeat(5, 1fr);
+    grid-template-columns: 100px repeat(5, 1fr);
     border-bottom: 1px solid #ddd;
 }
 
@@ -121,6 +121,7 @@ body {
     border-right: 1px solid #ddd;
     display: flex;
     align-items: center;
+    justify-content: flex-end;
     background: #f8f9fa;
 }
 
