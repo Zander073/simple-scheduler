@@ -1,26 +1,23 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Literal
+from datetime import datetime
 
-
-class AvailabilityOptimization(BaseModel):
+class AppointmentRequest(BaseModel):
+    client_id: int
     clinician_id: int
-    suggested_availability: List[str]
-    reasoning: Optional[str] = None
+    urgency: bool
+    time_of_day_preference: str
+    preferred_days: Optional[List[str]] = None
 
 
-class PreferenceLearning(BaseModel):
+class AppointmentAction(BaseModel):
+    action: Literal["create", "update"]
+    start_time: str
     client_id: int
-    learned_preferences: List[str]
-    reasoning: Optional[str] = None
+    clinician_id: int
+    appointment_id: Optional[int] = None  # Required for update actions
 
 
-class ScheduleSuggestion(BaseModel):
-    client_id: int
-    proposed_time: str
-    confidence: float
-    reasoning: Optional[str] = None
-
-
-class SupervisorDecision(BaseModel):
-    selected_agent: str
-    reasoning: Optional[str] = None 
+class AppointmentResult(BaseModel):
+    action_taken: str
+    appointment: dict 

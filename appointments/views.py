@@ -7,6 +7,8 @@ from .models import Appointment, Client
 from .serializers import AppointmentSerializer, ClientSerializer
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+from agents.appointment_request_agent import AppointmentRequestAgent
+from agents.schemas import AppointmentRequest
 import random
 from datetime import datetime, time, timedelta
 from django.utils import timezone
@@ -62,7 +64,7 @@ def client_list(request):
 @api_view(['POST'])
 def request_appointment(request):
     """
-    Create an appointment request (demo endpoint).
+    Create an appointment request and process it using the appointment request agent.
     """
     try:
         # Get the first clinician for demo purposes
@@ -85,23 +87,40 @@ def request_appointment(request):
         
         # Extract form data
         is_urgent = request.data.get('is_urgent', False)
-        time_preference = request.data.get('time_preference')  # Not required
+        time_preference = request.data.get('time_preference', 'any')  # Default to 'any'
+        preferred_days = request.data.get('preferred_days', None)  # Optional list of days
         
-        # Validate time_preference if present
-        if time_preference is not None:
-            if not isinstance(time_preference, int) or time_preference < 9 or time_preference > 16:
+        # Validate time_preference if it's a specific hour
+        if isinstance(time_preference, int):
+            if time_preference < 9 or time_preference > 16:
                 return Response(
                     {'error': 'time_preference must be an integer between 9 and 16 (inclusive)'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
+            # Convert hour to time of day preference
+            if time_preference < 12:
+                time_of_day_preference = "morning"
+            elif time_preference < 17:
+                time_of_day_preference = "afternoon"
+            else:
+                time_of_day_preference = "evening"
+        else:
+            # Handle string preferences
+            time_of_day_preference = time_preference
+
+        # Create AppointmentRequest object
+        appointment_request = AppointmentRequest(
+            client_id=client.id,
+            clinician_id=clinician.id,
+            urgency=is_urgent,
+            time_of_day_preference=time_of_day_preference,
+            preferred_days=preferred_days
+        )
+
+        # Initialize and call the appointment request agent
+        agent = AppointmentRequestAgent()
+        results = agent.infer(appointment_request)
         
-        # Create request object (to be passed to service later)
-        appointment_request = {
-            'is_urgent': is_urgent,
-            'time_preference': time_preference,
-            'client': client,
-            'clinician': clinician
-        }
         
         # Generate a valid start time for the demo (ET timezone, weekday, 9 AM - 4 PM, on the hour)
         et_tz = pytz.timezone('America/New_York')
@@ -145,16 +164,35 @@ def request_appointment(request):
         )
         
         # Return success response
+        # Serialize the results
+        serialized_results = []
+        for result in results:
+            serialized_results.append({
+                'action_taken': result.action_taken,
+                'appointment': result.appointment
+            })
+
+        # Get updated appointments for the clinician
+        updated_appointments = Appointment.objects.filter(
+            clinician=clinician
+        ).select_related('client').order_by('start_time')
+        appointment_serializer = AppointmentSerializer(updated_appointments, many=True)
+
+>>>>>>> 15ce5d1 (agent mods)
         return Response({
-            'message': 'Appointment request received',
+            'message': 'Appointment request processed successfully',
             'request_data': {
                 'is_urgent': is_urgent,
                 'time_preference': time_preference,
+                'time_of_day_preference': time_of_day_preference,
+                'preferred_days': preferred_days,
                 'client_id': client.id,
                 'clinician_id': clinician.id
-            }
+            },
+            'agent_results': serialized_results,
+            'updated_appointments': appointment_serializer.data
         }, status=status.HTTP_200_OK)
-        
+
     except Exception as e:
         return Response(
             {'error': f'Error processing appointment request: {str(e)}'},
