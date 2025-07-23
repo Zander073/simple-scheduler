@@ -4,12 +4,15 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.contrib.auth.models import User
 from .models import Appointment, Client
-from .serializers import AppointmentSerializer, ClientSerializer
+from .serializers import AppointmentSerializer, ClientSerializer, ClientSerializer
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
-from agents.appointment_request_agent import AppointmentRequestAgent
-from agents.schemas import AppointmentRequest
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 import random
+from datetime import datetime, time, timedelta
+from django.utils import timezone
+import pytz
 from datetime import datetime, time, timedelta
 from django.utils import timezone
 import pytz
@@ -64,7 +67,7 @@ def client_list(request):
 @api_view(['POST'])
 def request_appointment(request):
     """
-    Create an appointment request and process it using the appointment request agent.
+    Create an appointment request (demo endpoint).
     """
     try:
         # Get the first clinician for demo purposes
@@ -87,39 +90,46 @@ def request_appointment(request):
         
         # Extract form data
         is_urgent = request.data.get('is_urgent', False)
-        time_preference = request.data.get('time_preference', 'any')  # Default to 'any'
-        preferred_days = request.data.get('preferred_days', None)  # Optional list of days
+        time_preference = request.data.get('time_preference')  # Not required
         
-        # Validate time_preference if it's a specific hour
-        if isinstance(time_preference, int):
-            if time_preference < 9 or time_preference > 16:
+        # Validate time_preference if present
+        if time_preference is not None:
+            if not isinstance(time_preference, int) or time_preference < 9 or time_preference > 16:
                 return Response(
                     {'error': 'time_preference must be an integer between 9 and 16 (inclusive)'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            # Convert hour to time of day preference
-            if time_preference < 12:
-                time_of_day_preference = "morning"
-            elif time_preference < 17:
-                time_of_day_preference = "afternoon"
-            else:
-                time_of_day_preference = "evening"
-        else:
-            # Handle string preferences
-            time_of_day_preference = time_preference
-
-        # Create AppointmentRequest object
-        appointment_request = AppointmentRequest(
-            client_id=client.id,
-            clinician_id=clinician.id,
-            urgency=is_urgent,
-            time_of_day_preference=time_of_day_preference,
-            preferred_days=preferred_days
-        )
-
-        # Initialize and call the appointment request agent
-        agent = AppointmentRequestAgent()
-        results = agent.infer(appointment_request)
+        
+        # Create request object (to be passed to service later)
+        appointment_request = {
+            'is_urgent': is_urgent,
+            'time_preference': time_preference,
+            'client': client,
+            'clinician': clinician
+        }
+        
+        # Generate a valid start time for the demo (ET timezone, weekday, 9 AM - 4 PM, on the hour)
+        et_tz = pytz.timezone('America/New_York')
+        now_et = datetime.now(et_tz)
+        
+        # Find next valid weekday and time
+        start_time_et = now_et.replace(hour=9, minute=0, second=0, microsecond=0)
+        
+        # If it's past 4 PM today, move to tomorrow
+        if start_time_et.hour >= 16:
+            start_time_et = start_time_et + timedelta(days=1)
+        
+        # If it's a weekend, move to next Monday
+        while start_time_et.weekday() >= 5:  # Saturday = 5, Sunday = 6
+            start_time_et = start_time_et + timedelta(days=1)
+        
+        # If time_preference is provided, use that hour (but keep it within 9-4 range)
+        if time_preference is not None:
+            hour = max(9, min(16, time_preference))
+            start_time_et = start_time_et.replace(hour=hour)
+        
+        # Convert to UTC for storage/transmission
+        start_time_utc = start_time_et.astimezone(pytz.UTC)
         
         
         # Generate a valid start time for the demo (ET timezone, weekday, 9 AM - 4 PM, on the hour)
@@ -178,21 +188,16 @@ def request_appointment(request):
         ).select_related('client').order_by('start_time')
         appointment_serializer = AppointmentSerializer(updated_appointments, many=True)
 
->>>>>>> 15ce5d1 (agent mods)
         return Response({
-            'message': 'Appointment request processed successfully',
+            'message': 'Appointment request received',
             'request_data': {
                 'is_urgent': is_urgent,
                 'time_preference': time_preference,
-                'time_of_day_preference': time_of_day_preference,
-                'preferred_days': preferred_days,
                 'client_id': client.id,
                 'clinician_id': clinician.id
-            },
-            'agent_results': serialized_results,
-            'updated_appointments': appointment_serializer.data
+            }
         }, status=status.HTTP_200_OK)
-
+        
     except Exception as e:
         return Response(
             {'error': f'Error processing appointment request: {str(e)}'},
@@ -278,6 +283,123 @@ def create_appointment(request):
         if not (time(9, 0) <= appointment_time <= time(16, 0)):
             return Response(
                 {'error': 'Appointments must be between 9 AM and 4 PM Eastern Time'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Validation: Start time can't be on a weekend
+        if start_time.weekday() >= 5:  # Saturday = 5, Sunday = 6
+            return Response(
+                {'error': 'Appointments cannot be scheduled on weekends'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Check for scheduling conflicts (optional but recommended)
+        existing_appointment = Appointment.objects.filter(
+            clinician=clinician,
+            start_time__date=start_time.date(),
+            start_time__time=start_time.time()
+        ).first()
+        
+        if existing_appointment:
+            return Response(
+                {'error': 'An appointment already exists at this time'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Create the appointment
+        appointment = Appointment.objects.create(
+            start_time=start_time,
+            duration_in_minutes=50,  # Default duration
+            client=client,
+            clinician=clinician
+        )
+        
+        # Serialize and return the created appointment
+        serializer = AppointmentSerializer(appointment)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+    except Exception as e:
+        return Response(
+            {'error': f'Error creating appointment: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(['POST'])
+def create_appointment(request):
+    """
+    Create a new appointment with validation constraints.
+    """
+    try:
+        # Get the first clinician for demo purposes
+        clinician = User.objects.filter(username__startswith='clinician').first()
+        if not clinician:
+            return Response(
+                {'error': 'No clinicians found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Extract and validate required fields
+        client_id = request.data.get('client')
+        start_time_str = request.data.get('start_time')
+        
+        if not all([client_id, start_time_str]):
+            return Response(
+                {'error': 'client and start_time are required fields'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Validate client exists and belongs to clinician
+        try:
+            client = Client.objects.get(id=client_id, clinician=clinician)
+        except Client.DoesNotExist:
+            return Response(
+                {'error': 'Client not found or not associated with current clinician'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Parse ISO datetime string
+        try:
+            # Parse the datetime string
+            if 'T' in start_time_str:
+                # Handle ISO format with or without timezone
+                if start_time_str.endswith('Z'):
+                    # UTC time
+                    start_time = datetime.fromisoformat(start_time_str.replace('Z', '+00:00'))
+                elif '+' in start_time_str or start_time_str.endswith('Z'):
+                    # Already has timezone info
+                    start_time = datetime.fromisoformat(start_time_str)
+                else:
+                    # Naive datetime - treat as local time
+                    start_time = datetime.fromisoformat(start_time_str)
+                    start_time = timezone.make_aware(start_time)
+            else:
+                # Fallback for other formats
+                start_time = datetime.strptime(start_time_str, '%Y-%m-%d %H:%M:%S')
+                start_time = timezone.make_aware(start_time)
+        except ValueError:
+            return Response(
+                {'error': 'Invalid start_time format. Use ISO format (e.g., 2025-01-23T14:00:00)'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Validation: Start time cannot be in the past
+        if start_time <= timezone.now():
+            return Response(
+                {'error': 'Appointment start time cannot be in the past'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Validation: Time must be on the hour and between 9 AM and 4 PM
+        appointment_time = start_time.time()
+        if appointment_time.minute != 0:
+            return Response(
+                {'error': 'Appointments must start on the hour (00 minutes)'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if not (time(9, 0) <= appointment_time <= time(16, 0)):
+            return Response(
+                {'error': 'Appointments must be between 9 AM and 4 PM'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
