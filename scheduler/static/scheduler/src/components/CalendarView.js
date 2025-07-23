@@ -11,11 +11,13 @@ function CalendarView() {
         return monday;
     });
 
-    // State for appointments
+    // State for appointments and clients
     const [appointments, setAppointments] = React.useState([]);
+    const [clients, setClients] = React.useState([]);
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState(null);
     const [notifications, setNotifications] = React.useState([]);
+    const [isModalOpen, setIsModalOpen] = React.useState(false);
 
     // WebSocket connection
     React.useEffect(() => {
@@ -76,9 +78,24 @@ function CalendarView() {
         }
     };
 
-    // Fetch appointments on component mount and when week changes
+    // Fetch clients
+    const fetchClients = async () => {
+        try {
+            const response = await fetch('/api/clients/');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            setClients(data);
+        } catch (err) {
+            console.error('Error fetching clients:', err);
+        }
+    };
+
+    // Fetch appointments and clients on component mount
     React.useEffect(() => {
         fetchAppointments();
+        fetchClients();
     }, []); // Only fetch on mount for now, we can add week dependency later if needed
 
     const goToPreviousWeek = () => {
@@ -210,7 +227,7 @@ function CalendarView() {
                     <button className="current-week-button" onClick={goToCurrentWeek}>
                         Current Week
                     </button>
-                    <button className="add-appointment-button">
+                    <button className="add-appointment-button" onClick={() => setIsModalOpen(true)}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <line x1="12" y1="5" x2="12" y2="19"></line>
                             <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -225,6 +242,13 @@ function CalendarView() {
             {!loading && !error && (
                 <Calendar currentWeekStart={currentWeekStart} appointments={appointments} />
             )}
+            
+            <AddAppointmentModal 
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                clients={clients}
+                onAppointmentCreated={fetchAppointments}
+            />
         </>
     );
 }

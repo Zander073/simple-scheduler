@@ -4,10 +4,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.contrib.auth.models import User
 from .models import Appointment, Client
-from .serializers import AppointmentSerializer
+from .serializers import AppointmentSerializer, ClientSerializer
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 import random
+from datetime import datetime, time
+from django.utils import timezone
 
 @api_view(['GET'])
 def appointment_list(request):
@@ -30,6 +32,29 @@ def appointment_list(request):
     except Exception as e:
         return Response(
             {'error': f'Error fetching appointments: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(['GET'])
+def client_list(request):
+    """
+    List all clients for the first clinician (demo endpoint).
+    """
+    try:
+        # Get the first clinician for demo purposes
+        clinician = User.objects.filter(username__startswith='clinician').first()
+        if not clinician:
+            return Response(
+                {'error': 'No clinicians found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        clients = Client.objects.filter(clinician=clinician).order_by('first_name', 'last_name')
+        serializer = ClientSerializer(clients, many=True)
+        return Response(serializer.data)
+    except Exception as e:
+        return Response(
+            {'error': f'Error fetching clients: {str(e)}'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
@@ -108,5 +133,122 @@ def request_appointment(request):
     except Exception as e:
         return Response(
             {'error': f'Error processing appointment request: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(['POST'])
+def create_appointment(request):
+    """
+    Create a new appointment with validation constraints.
+    """
+    try:
+        # Get the first clinician for demo purposes
+        clinician = User.objects.filter(username__startswith='clinician').first()
+        if not clinician:
+            return Response(
+                {'error': 'No clinicians found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Extract and validate required fields
+        client_id = request.data.get('client')
+        start_time_str = request.data.get('start_time')
+        
+        if not all([client_id, start_time_str]):
+            return Response(
+                {'error': 'client and start_time are required fields'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Validate client exists and belongs to clinician
+        try:
+            client = Client.objects.get(id=client_id, clinician=clinician)
+        except Client.DoesNotExist:
+            return Response(
+                {'error': 'Client not found or not associated with current clinician'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Parse ISO datetime string
+        try:
+            # Parse the datetime string
+            if 'T' in start_time_str:
+                # Handle ISO format with or without timezone
+                if start_time_str.endswith('Z'):
+                    # UTC time
+                    start_time = datetime.fromisoformat(start_time_str.replace('Z', '+00:00'))
+                elif '+' in start_time_str or start_time_str.endswith('Z'):
+                    # Already has timezone info
+                    start_time = datetime.fromisoformat(start_time_str)
+                else:
+                    # Naive datetime - treat as local time
+                    start_time = datetime.fromisoformat(start_time_str)
+                    start_time = timezone.make_aware(start_time)
+            else:
+                # Fallback for other formats
+                start_time = datetime.strptime(start_time_str, '%Y-%m-%d %H:%M:%S')
+                start_time = timezone.make_aware(start_time)
+        except ValueError:
+            return Response(
+                {'error': 'Invalid start_time format. Use ISO format (e.g., 2025-01-23T14:00:00)'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Validation: Start time cannot be in the past
+        if start_time <= timezone.now():
+            return Response(
+                {'error': 'Appointment start time cannot be in the past'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Validation: Time must be on the hour and between 9 AM and 4 PM
+        appointment_time = start_time.time()
+        if appointment_time.minute != 0:
+            return Response(
+                {'error': 'Appointments must start on the hour (00 minutes)'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if not (time(9, 0) <= appointment_time <= time(16, 0)):
+            return Response(
+                {'error': 'Appointments must be between 9 AM and 4 PM'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Validation: Start time can't be on a weekend
+        if start_time.weekday() >= 5:  # Saturday = 5, Sunday = 6
+            return Response(
+                {'error': 'Appointments cannot be scheduled on weekends'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Check for scheduling conflicts (optional but recommended)
+        existing_appointment = Appointment.objects.filter(
+            clinician=clinician,
+            start_time__date=start_time.date(),
+            start_time__time=start_time.time()
+        ).first()
+        
+        if existing_appointment:
+            return Response(
+                {'error': 'An appointment already exists at this time'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Create the appointment
+        appointment = Appointment.objects.create(
+            start_time=start_time,
+            duration_in_minutes=50,  # Default duration
+            client=client,
+            clinician=clinician
+        )
+        
+        # Serialize and return the created appointment
+        serializer = AppointmentSerializer(appointment)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+    except Exception as e:
+        return Response(
+            {'error': f'Error creating appointment: {str(e)}'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )

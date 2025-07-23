@@ -5,4 +5,7 @@
 @import url('calendar.css');
 
 /* Request form styles */
-@import url('request-form.css'); 
+@import url('request-form.css');
+
+/* Modal styles */
+@import url('modal.css'); 

@@ -33,16 +33,24 @@ function Calendar({ currentWeekStart, appointments }) {
         dayDate.setDate(currentWeekStart.getDate() + dayIndex);
         
         // Convert time slot back to hour for comparison
-        const hour = timeSlot.includes('PM') && !timeSlot.includes('12') 
-            ? parseInt(timeSlot.split(':')[0]) + 12 
-            : timeSlot.includes('12 PM') 
-                ? 12 
-                : parseInt(timeSlot.split(':')[0]);
+        let hour;
+        if (timeSlot.includes('12:00 PM')) {
+            hour = 12;
+        } else if (timeSlot.includes('PM')) {
+            hour = parseInt(timeSlot.split(':')[0]) + 12;
+        } else {
+            hour = parseInt(timeSlot.split(':')[0]);
+        }
         
         return appointments.filter(appointment => {
             const appointmentDate = new Date(appointment.start_time);
-            return appointmentDate.toDateString() === dayDate.toDateString() && 
-                   appointmentDate.getHours() === hour;
+            const appointmentDay = appointmentDate.toDateString();
+            const targetDay = dayDate.toDateString();
+            const appointmentHour = appointmentDate.getHours();
+            
+
+            
+            return appointmentDay === targetDay && appointmentHour === hour;
         });
     };
 
