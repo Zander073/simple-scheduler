@@ -31,7 +31,7 @@
         height: 32px;
         background: white;
         border: 1px solid #ddd;
-        border-radius: 4px;
+        border-radius: 6px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -41,6 +41,46 @@
 
     .nav-button:hover {
         background: #f8f9fa;
+    }
+    
+    .current-week-button {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        padding: 6px 12px;
+        font-size: 14px;
+        font-weight: 500;
+        color: #333;
+        cursor: pointer;
+        margin-left: 8px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+    }
+    
+    .current-week-button:hover {
+        background: #f8f9fa;
+    }
+    
+    .add-appointment-button {
+        background: #000;
+        border: 1px solid #000;
+        border-radius: 6px;
+        padding: 6px 12px;
+        font-size: 14px;
+        font-weight: 500;
+        color: white;
+        cursor: pointer;
+        margin-left: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        height: 32px;
+    }
+    
+    .add-appointment-button:hover {
+        background: #333;
+        border-color: #333;
     }
 }
 

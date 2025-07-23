@@ -93,6 +93,18 @@ function CalendarView() {
         setCurrentWeekStart(nextWeek);
     };
     
+    const goToCurrentWeek = () => {
+        const now = new Date();
+        const currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+        const currentWeekStart = new Date(now);
+        
+        // Go back to Monday of current week
+        const daysToMonday = currentDay === 0 ? 6 : currentDay - 1;
+        currentWeekStart.setDate(now.getDate() - daysToMonday);
+        
+        setCurrentWeekStart(currentWeekStart);
+    };
+    
     return (
         <>
             {notifications.length > 0 && (
@@ -194,6 +206,16 @@ function CalendarView() {
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="9,18 15,12 9,6"></polyline>
                         </svg>
+                    </button>
+                    <button className="current-week-button" onClick={goToCurrentWeek}>
+                        Current Week
+                    </button>
+                    <button className="add-appointment-button">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Add Appointment
                     </button>
                 </div>
             </div>
