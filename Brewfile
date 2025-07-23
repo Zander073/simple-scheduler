@@ -1,1 +1,2 @@
 brew "uv"
+brew "redis"

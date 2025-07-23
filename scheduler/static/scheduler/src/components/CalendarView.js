@@ -15,6 +15,44 @@ function CalendarView() {
     const [appointments, setAppointments] = React.useState([]);
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState(null);
+    const [notification, setNotification] = React.useState(null);
+
+    // WebSocket connection
+    React.useEffect(() => {
+        const ws = new WebSocket('ws://localhost:8001/ws/appointments/');
+        
+        ws.onopen = function(e) {
+            console.log('WebSocket connected');
+        };
+        
+        ws.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            if (data.type === 'appointment_request') {
+                setNotification({
+                    type: 'success',
+                    message: `New appointment request from ${data.data.client_name}`,
+                    urgent: data.data.is_urgent
+                });
+                
+                // Auto-hide notification after 5 seconds
+                setTimeout(() => {
+                    setNotification(null);
+                }, 5000);
+            }
+        };
+        
+        ws.onclose = function(e) {
+            console.log('WebSocket disconnected');
+        };
+        
+        ws.onerror = function(e) {
+            console.log('WebSocket error:', e);
+        };
+        
+        return () => {
+            ws.close();
+        };
+    }, []);
 
     // Fetch appointments
     const fetchAppointments = async () => {
@@ -54,6 +92,20 @@ function CalendarView() {
     
     return (
         <>
+            {notification && (
+                <div className={`notification ${notification.type} ${notification.urgent ? 'urgent' : ''}`}>
+                    <div className="notification-content">
+                        <span className="notification-message">{notification.message}</span>
+                        <button 
+                            className="notification-close"
+                            onClick={() => setNotification(null)}
+                        >
+                            ×
+                        </button>
+                    </div>
+                </div>
+            )}
+            
             <div className="header">
                 <div className="header-content">
                     <h1>{getWeekHeader(currentWeekStart)}</h1>

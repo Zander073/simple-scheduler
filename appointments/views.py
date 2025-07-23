@@ -5,6 +5,8 @@ from rest_framework.response import Response
 from django.contrib.auth.models import User
 from .models import Appointment, Client
 from .serializers import AppointmentSerializer
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 import random
 
 @api_view(['GET'])
@@ -75,7 +77,24 @@ def request_appointment(request):
             'clinician': clinician
         }
         
-        # For now, just return success
+        # Broadcast notification to WebSocket clients
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "clinician_notifications",
+            {
+                "type": "appointment_request",
+                "message": "New appointment request received",
+                "data": {
+                    'is_urgent': is_urgent,
+                    'time_preference': time_preference,
+                    'client_id': client.id,
+                    'clinician_id': clinician.id,
+                    'client_name': f"{client.first_name} {client.last_name}"
+                }
+            }
+        )
+        
+        # Return success response
         return Response({
             'message': 'Appointment request received',
             'request_data': {
