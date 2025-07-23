@@ -111,15 +111,7 @@ def request_appointment(request):
         from pytz import timezone, UTC
         from dateutil import parser
 
-        start_time_utc = actions_taken[0].start_time
-        # If start_time_utc is a string, parse it to a datetime object
-        if isinstance(start_time_utc, str):
-            start_time_utc = parser.isoparse(start_time_utc)
-            if start_time_utc.tzinfo is None:
-                start_time_utc = UTC.localize(start_time_utc)
-        # Convert UTC to America/New_York (EDT/EST as appropriate)
-        eastern = timezone('America/New_York')
-        start_time_edt = start_time_utc.astimezone(eastern).isoformat()
+        start_time = actions_taken[0].start_time
 
 
         # Broadcast notification to WebSocket clients
@@ -135,7 +127,7 @@ def request_appointment(request):
                     'client_id': client.id,
                     'clinician_id': clinician.id,
                     'client_name': f"{client.first_name} {client.last_name}",
-                    'start_time': start_time_edt
+                    'start_time': start_time
                 }
             }
         )

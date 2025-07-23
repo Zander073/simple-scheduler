@@ -24,7 +24,7 @@ class Appointment(models.Model):
     Simple appointment model for hackathon demo.
     """
     start_time = models.DateTimeField()
-    duration_in_minutes = models.PositiveIntegerField(default=50)
+    duration_in_minutes = models.PositiveIntegerField(default=60)
     client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='appointments')
     clinician = models.ForeignKey(User, on_delete=models.CASCADE, related_name='appointments')
 

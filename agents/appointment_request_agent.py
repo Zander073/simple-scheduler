@@ -26,7 +26,7 @@ class AppointmentRequestAgent(BaseAgent):
         - The appointment must be scheduled on or after the current time
         - All appointments must be scheduled ON THE HOUR (e.g., 9:00, 10:00, 11:00, etc.)
         - All appointments must be between 9:00 AM and 5:00 PM (business hours)
-        - All appointments must be 50 minutes in duration
+        - All appointments must be 60 minutes in duration
         - The response must be a JSON format with no new lines or extra spaces
     
         Handle urgent appointments with the following rules:
@@ -169,7 +169,7 @@ class AppointmentRequestAgent(BaseAgent):
         monday_9am = (now - timedelta(days=now.weekday())).replace(hour=9, minute=0, second=0, microsecond=0)
         friday_5pm = (now + timedelta(days=4-now.weekday())).replace(hour=17, minute=0, second=0, microsecond=0)
         
-        # Generate all possible time slots (on the hour, 50 minutes duration)
+        # Generate all possible time slots (on the hour, 60 minutes duration)
         available_slots = []
         current_slot = monday_9am
         
@@ -190,7 +190,7 @@ class AppointmentRequestAgent(BaseAgent):
                 continue
                 
             # Check if this slot is available (not booked)
-            slot_end = current_slot + timedelta(minutes=50)
+            slot_end = current_slot + timedelta(minutes=60)
             is_booked = weekly_appointments.filter(
                 start_time__lt=slot_end,
                 start_time__gte=current_slot
