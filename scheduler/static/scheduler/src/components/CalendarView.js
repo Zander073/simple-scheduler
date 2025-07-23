@@ -36,7 +36,8 @@ function CalendarView() {
                     message: `New appointment request from ${data.data.client_name}`,
                     urgent: data.data.is_urgent,
                     timestamp: new Date(),
-                    client_name: data.data.client_name
+                    client_name: data.data.client_name,
+                    start_time: data.data.start_time
                 };
                 
                 setNotifications(prev => {
@@ -97,6 +98,28 @@ function CalendarView() {
         fetchAppointments();
         fetchClients();
     }, []); // Only fetch on mount for now, we can add week dependency later if needed
+
+    // Function to format start time for display in browser timezone
+    const formatStartTime = (startTimeString) => {
+        if (!startTimeString) return 'TBD';
+        
+        const date = new Date(startTimeString);
+        const dateOptions = {
+            weekday: 'long',
+            month: 'short',
+            day: 'numeric'
+        };
+        const timeOptions = {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        };
+        
+        const dateStr = date.toLocaleDateString('en-US', dateOptions);
+        const timeStr = date.toLocaleTimeString('en-US', timeOptions);
+        
+        return `${dateStr} at ${timeStr}`;
+    };
 
     const goToPreviousWeek = () => {
         const prevWeek = new Date(currentWeekStart);
@@ -161,7 +184,7 @@ function CalendarView() {
                                             SimpleSchedule Action:
                                         </div>
                                         <ul className="action-list">
-                                            <li>Emergency appointment auto-scheduled for Tuesday, Jul 22 at 1:29 AM</li>
+                                            <li>Emergency appointment auto-scheduled for {formatStartTime(notification.start_time)}</li>
                                             <li>Client was communicated with via secure emergency text message and phone call</li>
                                             <li>Crisis intervention protocol summary generated and added to client record</li>
                                         </ul>

@@ -8,8 +8,9 @@ from .serializers import AppointmentSerializer, ClientSerializer
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 import random
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from django.utils import timezone
+import pytz
 
 @api_view(['GET'])
 def appointment_list(request):
@@ -102,6 +103,29 @@ def request_appointment(request):
             'clinician': clinician
         }
         
+        # Generate a valid start time for the demo (ET timezone, weekday, 9 AM - 4 PM, on the hour)
+        et_tz = pytz.timezone('America/New_York')
+        now_et = datetime.now(et_tz)
+        
+        # Find next valid weekday and time
+        start_time_et = now_et.replace(hour=9, minute=0, second=0, microsecond=0)
+        
+        # If it's past 4 PM today, move to tomorrow
+        if start_time_et.hour >= 16:
+            start_time_et = start_time_et + timedelta(days=1)
+        
+        # If it's a weekend, move to next Monday
+        while start_time_et.weekday() >= 5:  # Saturday = 5, Sunday = 6
+            start_time_et = start_time_et + timedelta(days=1)
+        
+        # If time_preference is provided, use that hour (but keep it within 9-4 range)
+        if time_preference is not None:
+            hour = max(9, min(16, time_preference))
+            start_time_et = start_time_et.replace(hour=hour)
+        
+        # Convert to UTC for storage/transmission
+        start_time_utc = start_time_et.astimezone(pytz.UTC)
+        
         # Broadcast notification to WebSocket clients
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
@@ -114,7 +138,8 @@ def request_appointment(request):
                     'time_preference': time_preference,
                     'client_id': client.id,
                     'clinician_id': clinician.id,
-                    'client_name': f"{client.first_name} {client.last_name}"
+                    'client_name': f"{client.first_name} {client.last_name}",
+                    'start_time': start_time_utc.isoformat()
                 }
             }
         )
