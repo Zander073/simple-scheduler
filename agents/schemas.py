@@ -9,6 +9,9 @@ class AppointmentRequest(BaseModel):
     time_of_day_preference: str
     preferred_days: Optional[List[str]] = None
 
+    def __str__(self):
+        return f"AppointmentRequest(client_id={self.client_id}, clinician_id={self.clinician_id}, urgency={self.urgency}, time_of_day_preference={self.time_of_day_preference}, preferred_days={self.preferred_days})"
+
 
 class AppointmentAction(BaseModel):
     action: Literal["create", "update"]
