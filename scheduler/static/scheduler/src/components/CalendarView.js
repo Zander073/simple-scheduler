@@ -33,12 +33,12 @@ function CalendarView() {
                     type: 'success',
                     message: `New appointment request from ${data.data.client_name}`,
                     urgent: data.data.is_urgent,
-                    timestamp: new Date()
+                    timestamp: new Date(),
+                    client_name: data.data.client_name
                 };
                 
                 setNotifications(prev => {
                     const updated = [...prev, newNotification];
-                    console.log('Notifications updated:', updated.length, 'notifications');
                     return updated;
                 });
             }
@@ -103,15 +103,77 @@ function CalendarView() {
                             className={`notification ${notification.type} ${notification.urgent ? 'urgent' : ''}`}
                             style={{order: index}}
                         >
-                            <div className="notification-content">
-                                <span className="notification-message">{notification.message}</span>
-                                <button 
-                                    className="notification-close"
-                                    onClick={() => setNotifications(prev => prev.filter(n => n.id !== notification.id))}
-                                >
-                                    ×
-                                </button>
-                            </div>
+                            {notification.urgent ? (
+                                <div className="notification-content">
+                                    <button 
+                                        className="notification-close"
+                                        onClick={() => setNotifications(prev => prev.filter(n => n.id !== notification.id))}
+                                    >
+                                        ×
+                                    </button>
+                                    
+                                    <div className="critical-header">
+                                        <svg className="warning-icon" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M12 2L1 21h22L12 2zm0 3.17L19.83 19H4.17L12 5.17zM11 16h2v2h-2zm0-6h2v4h-2z"/>
+                                        </svg>
+                                        <span className="critical-label">Critical</span>
+                                    </div>
+                                    
+                                    <div className="client-name">{notification.client_name}</div>
+                                    <div className="crisis-message">
+                                        Client experiencing severe dissociative episodes with reality distortion. Immediate psychological stabilization required.
+                                    </div>
+                                    
+                                    <div className="action-section">
+                                        <div className="action-title">
+                                            <svg className="action-icon" viewBox="0 0 24 24" fill="currentColor">
+                                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                                            </svg>
+                                            SimpleSchedule Action:
+                                        </div>
+                                        <ul className="action-list">
+                                            <li>Emergency appointment auto-scheduled for Tuesday, Jul 22 at 1:29 AM</li>
+                                            <li>Client was communicated with via secure emergency text message and phone call</li>
+                                            <li>Crisis intervention protocol summary generated and added to client record</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="notification-content">
+                                    <button 
+                                        className="notification-close"
+                                        onClick={() => setNotifications(prev => prev.filter(n => n.id !== notification.id))}
+                                    >
+                                        ×
+                                    </button>
+                                    
+                                    <div className="info-header">
+                                        <svg className="info-icon" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                                        </svg>
+                                        <span className="info-label">Info</span>
+                                    </div>
+                                    
+                                    <div className="client-name">{notification.client_name}</div>
+                                    <div className="request-message">
+                                        Client requested to reschedule Tuesday session due to child's school emergency. Alternative time requested for same week if available.
+                                    </div>
+                                    
+                                    <div className="action-section">
+                                        <div className="action-title">
+                                            <svg className="action-icon" viewBox="0 0 24 24" fill="currentColor">
+                                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                                            </svg>
+                                            SimpleSchedule Action:
+                                        </div>
+                                        <ul className="action-list">
+                                            <li>Appointment request received and queued for review</li>
+                                            <li>Client was communicated with via secure patient portal and email confirmation</li>
+                                            <li>Schedule change confirmation letter generated and added to client record</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>
