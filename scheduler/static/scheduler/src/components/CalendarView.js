@@ -44,6 +44,9 @@ function CalendarView() {
                     const updated = [...prev, newNotification];
                     return updated;
                 });
+                
+                // Refresh appointments to see any changes
+                fetchAppointments();
             }
         };
         
