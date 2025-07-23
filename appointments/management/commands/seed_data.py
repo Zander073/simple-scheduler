@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import datetime, timedelta
 import random
+import pytz
 from appointments.models import Client, Appointment
 
 
@@ -137,11 +138,14 @@ class Command(BaseCommand):
 
                     # Skip if outside business hours
                     if hour in business_hours:
+                        # Create appointment time in Eastern Time
+                        et_tz = pytz.timezone('America/New_York')
                         appointment_time = datetime.combine(
                             current_date,
                             datetime.min.time().replace(hour=hour)
                         )
-                        appointment_time = timezone.make_aware(appointment_time)
+                        # Make it timezone-aware in Eastern Time
+                        appointment_time = et_tz.localize(appointment_time)
                         appointment_times.append(appointment_time)
 
                 current_date += timedelta(days=1)
