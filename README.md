@@ -40,11 +40,10 @@ function dpy() {
   return $?
 }
 ```
-* Start server: `dpy runserver`
-* Open a console: `dpy shell`
-* Generate migrations: `dpy makemigrations`
-* Run migrations: `dpy migrate`
-* Seed data: `dpy seed_data`
+* Run migrations: `make migrate`
+* Seed data: `make seed`
+* Start server: `make start`
+* Start websocket server: `make websocket`
 
 ## Run the agent demo
 Note: make sure you have a `CLAUDE_API_KEY` defined in your `.env`
@@ -62,10 +61,10 @@ python demo_client_preference_agent.py
 ### Test preference agent with management command
 ```bash
 # Create sample data and test
-python manage.py test_preference_agent --create-sample-data
+dpy test_preference_agent --create-sample-data
 
 # Test specific client
-python manage.py test_preference_agent --client-id 1
+dpy test_preference_agent --client-id 1
 ```
 
 ## API Usage
