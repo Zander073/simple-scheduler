@@ -1,4 +1,4 @@
-function RequestView() {
+function RequestView({ navigateTo = () => {} }) {
     const [isUrgent, setIsUrgent] = React.useState(false);
     const [timePreference, setTimePreference] = React.useState(2); // 9 AM = 0, 11 AM = 2
     const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -53,10 +53,13 @@ function RequestView() {
             const data = await response.json();
 
             if (response.ok) {
-                setSubmitMessage('Appointment request submitted successfully!');
-                // Reset form
-                setIsUrgent(false);
-                setTimePreference(2);
+                // Redirect to success page
+                if (typeof navigateTo === 'function') {
+                    navigateTo('request-submitted');
+                } else {
+                    // Fallback: redirect manually
+                    window.location.href = '/request/submitted/';
+                }
             } else {
                 setSubmitMessage(`Error: ${data.error || 'Failed to submit request'}`);
             }

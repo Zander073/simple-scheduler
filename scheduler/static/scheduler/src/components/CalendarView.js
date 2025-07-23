@@ -15,7 +15,7 @@ function CalendarView() {
     const [appointments, setAppointments] = React.useState([]);
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState(null);
-    const [notification, setNotification] = React.useState(null);
+    const [notifications, setNotifications] = React.useState([]);
 
     // WebSocket connection
     React.useEffect(() => {
@@ -28,16 +28,19 @@ function CalendarView() {
         ws.onmessage = function(e) {
             const data = JSON.parse(e.data);
             if (data.type === 'appointment_request') {
-                setNotification({
+                const newNotification = {
+                    id: Date.now(), // Unique ID for each notification
                     type: 'success',
                     message: `New appointment request from ${data.data.client_name}`,
-                    urgent: data.data.is_urgent
-                });
+                    urgent: data.data.is_urgent,
+                    timestamp: new Date()
+                };
                 
-                // Auto-hide notification after 5 seconds
-                setTimeout(() => {
-                    setNotification(null);
-                }, 5000);
+                setNotifications(prev => {
+                    const updated = [...prev, newNotification];
+                    console.log('Notifications updated:', updated.length, 'notifications');
+                    return updated;
+                });
             }
         };
         
@@ -92,17 +95,25 @@ function CalendarView() {
     
     return (
         <>
-            {notification && (
-                <div className={`notification ${notification.type} ${notification.urgent ? 'urgent' : ''}`}>
-                    <div className="notification-content">
-                        <span className="notification-message">{notification.message}</span>
-                        <button 
-                            className="notification-close"
-                            onClick={() => setNotification(null)}
+            {notifications.length > 0 && (
+                <div className="notifications-container">
+                    {notifications.map((notification, index) => (
+                        <div 
+                            key={notification.id} 
+                            className={`notification ${notification.type} ${notification.urgent ? 'urgent' : ''}`}
+                            style={{order: index}}
                         >
-                            ×
-                        </button>
-                    </div>
+                            <div className="notification-content">
+                                <span className="notification-message">{notification.message}</span>
+                                <button 
+                                    className="notification-close"
+                                    onClick={() => setNotifications(prev => prev.filter(n => n.id !== notification.id))}
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             )}
             

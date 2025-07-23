@@ -4,4 +4,5 @@ from . import views
 urlpatterns = [
     path('', views.SchedulerView.as_view(), name='scheduler'),
     path('request/', views.SchedulerView.as_view(), name='request'),
+    path('request/submitted/', views.SchedulerView.as_view(), name='request-submitted'),
 ]
