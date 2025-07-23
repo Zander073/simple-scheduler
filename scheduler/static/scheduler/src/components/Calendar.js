@@ -1,4 +1,4 @@
-function Calendar({ currentWeekStart, appointments }) {
+function Calendar({ currentWeekStart, appointments, onSlotClick }) {
     // Generate time slots from 9 AM to 4 PM
     const timeSlots = [];
     for (let hour = 9; hour <= 16; hour++) {
@@ -48,10 +48,37 @@ function Calendar({ currentWeekStart, appointments }) {
             const targetDay = dayDate.toDateString();
             const appointmentHour = appointmentDate.getHours();
             
-
-            
             return appointmentDay === targetDay && appointmentHour === hour;
         });
+    };
+
+    // Helper function to handle slot clicks
+    const handleSlotClick = (dayIndex, timeSlot) => {
+        if (!onSlotClick) return;
+        
+        const dayDate = new Date(currentWeekStart);
+        dayDate.setDate(currentWeekStart.getDate() + dayIndex);
+        
+        // Convert time slot to 24-hour format for the input
+        let hour;
+        if (timeSlot.includes('12:00 PM')) {
+            hour = 12;
+        } else if (timeSlot.includes('PM')) {
+            hour = parseInt(timeSlot.split(':')[0]) + 12;
+        } else {
+            hour = parseInt(timeSlot.split(':')[0]);
+        }
+        
+        // Format date as YYYY-MM-DD
+        const year = dayDate.getFullYear();
+        const month = String(dayDate.getMonth() + 1).padStart(2, '0');
+        const day = String(dayDate.getDate()).padStart(2, '0');
+        const dateStr = `${year}-${month}-${day}`;
+        
+        // Format time as HH:MM
+        const timeStr = `${String(hour).padStart(2, '0')}:00`;
+        
+        onSlotClick(dateStr, timeStr);
     };
 
     return (
@@ -76,10 +103,14 @@ function Calendar({ currentWeekStart, appointments }) {
                     <div className="time-slot">{time}</div>
                     {weekdays.map((day, index) => {
                         const slotAppointments = getAppointmentsForSlot(index, time);
+                        const isEmpty = slotAppointments.length === 0;
+                        
                         return (
                             <div 
                                 key={`${day}-${time}`} 
-                                className={`calendar-cell ${index === todayIndex ? 'today-cell' : ''}`}
+                                className={`calendar-cell ${index === todayIndex ? 'today-cell' : ''} ${isEmpty ? 'empty-slot' : ''}`}
+                                onClick={isEmpty ? () => handleSlotClick(index, time) : undefined}
+                                style={isEmpty ? { cursor: 'pointer' } : {}}
                             >
                                 {slotAppointments.map((appointment, appIndex) => (
                                     <div key={appointment.id} className="appointment">

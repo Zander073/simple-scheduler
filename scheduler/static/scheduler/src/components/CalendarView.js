@@ -18,6 +18,8 @@ function CalendarView() {
     const [error, setError] = React.useState(null);
     const [notifications, setNotifications] = React.useState([]);
     const [isModalOpen, setIsModalOpen] = React.useState(false);
+    const [selectedDate, setSelectedDate] = React.useState('');
+    const [selectedTime, setSelectedTime] = React.useState('09:00');
 
     // WebSocket connection
     React.useEffect(() => {
@@ -266,7 +268,15 @@ function CalendarView() {
             {loading && <div className="loading">Loading appointments...</div>}
             {error && <div className="error">Error loading appointments: {error}</div>}
             {!loading && !error && (
-                <Calendar currentWeekStart={currentWeekStart} appointments={appointments} />
+                <Calendar 
+                    currentWeekStart={currentWeekStart} 
+                    appointments={appointments}
+                    onSlotClick={(date, time) => {
+                        setSelectedDate(date);
+                        setSelectedTime(time);
+                        setIsModalOpen(true);
+                    }}
+                />
             )}
             
             <AddAppointmentModal 
@@ -274,6 +284,8 @@ function CalendarView() {
                 onClose={() => setIsModalOpen(false)}
                 clients={clients}
                 onAppointmentCreated={fetchAppointments}
+                initialDate={selectedDate}
+                initialTime={selectedTime}
             />
         </>
     );

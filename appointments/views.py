@@ -226,8 +226,11 @@ def create_appointment(request):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Validation: Time must be on the hour and between 9 AM and 4 PM
-        appointment_time = start_time.time()
+        # Validation: Time must be on the hour and between 9 AM and 4 PM (Eastern Time)
+        et_tz = pytz.timezone('America/New_York')
+        start_time_et = start_time.astimezone(et_tz)
+        appointment_time = start_time_et.time()
+        
         if appointment_time.minute != 0:
             return Response(
                 {'error': 'Appointments must start on the hour (00 minutes)'},
@@ -236,7 +239,7 @@ def create_appointment(request):
         
         if not (time(9, 0) <= appointment_time <= time(16, 0)):
             return Response(
-                {'error': 'Appointments must be between 9 AM and 4 PM'},
+                {'error': 'Appointments must be between 9 AM and 4 PM Eastern Time'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         

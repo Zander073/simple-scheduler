@@ -167,6 +167,14 @@
     background-color: rgba(3, 2, 19, 0.05);
 }
 
+.empty-slot {
+    transition: background-color 0.2s ease;
+}
+
+.empty-slot:hover {
+    background: #f8f9fa;
+}
+
 .appointment {
     background-color: rgba(0, 123, 255, 0.1);
     color: #007bff;

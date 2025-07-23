@@ -1,18 +1,26 @@
-function AddAppointmentModal({ isOpen, onClose, clients, onAppointmentCreated }) {
+function AddAppointmentModal({ isOpen, onClose, clients, onAppointmentCreated, initialDate, initialTime }) {
     const [selectedClient, setSelectedClient] = React.useState('');
     const [selectedDate, setSelectedDate] = React.useState('');
     const [selectedTime, setSelectedTime] = React.useState('09:00');
 
-    // Set default date to today when modal opens
+    // Set date and time when modal opens
     React.useEffect(() => {
         if (isOpen) {
-            const today = new Date();
-            const year = today.getFullYear();
-            const month = String(today.getMonth() + 1).padStart(2, '0');
-            const day = String(today.getDate()).padStart(2, '0');
-            setSelectedDate(`${year}-${month}-${day}`);
+            if (initialDate && initialTime) {
+                // Use provided initial values
+                setSelectedDate(initialDate);
+                setSelectedTime(initialTime);
+            } else {
+                // Use default values (today at 9 AM)
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                setSelectedDate(`${year}-${month}-${day}`);
+                setSelectedTime('09:00');
+            }
         }
-    }, [isOpen]);
+    }, [isOpen, initialDate, initialTime]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -50,16 +58,14 @@ function AddAppointmentModal({ isOpen, onClose, clients, onAppointmentCreated })
             const appointment = await response.json();
             console.log('Appointment created:', appointment);
             
-            // Close modal and reset form
+            // Reset form and close modal
+            resetForm();
             onClose();
             
             // Refresh the calendar to show the new appointment
             if (onAppointmentCreated) {
                 onAppointmentCreated();
             }
-            
-            // Show success message
-            alert('Appointment scheduled successfully!');
             
         } catch (error) {
             console.error('Error creating appointment:', error);
@@ -68,10 +74,14 @@ function AddAppointmentModal({ isOpen, onClose, clients, onAppointmentCreated })
     };
 
     const handleCancel = () => {
+        resetForm();
+        onClose();
+    };
+
+    const resetForm = () => {
         setSelectedClient('');
         setSelectedDate('');
         setSelectedTime('09:00');
-        onClose();
     };
 
     if (!isOpen) return null;
