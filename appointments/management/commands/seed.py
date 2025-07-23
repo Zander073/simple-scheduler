@@ -14,7 +14,7 @@ class Command(BaseCommand):
         parser.add_argument(
             '--clinicians',
             type=int,
-            default=3,
+            default=1,
             help='Number of clinicians to create'
         )
         parser.add_argument(

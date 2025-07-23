@@ -6,7 +6,7 @@ migrate:
 
 .PHONY: seed
 seed:
-	python manage.py seed_data
+	python manage.py seed
 
 .PHONY: start
 start:
