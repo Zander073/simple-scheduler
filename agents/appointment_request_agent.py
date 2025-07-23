@@ -1,5 +1,7 @@
 # agents/appointment_request_agent.py
 import json
+import re
+from django.utils import timezone
 from datetime import timedelta
 from agents.base import BaseAgent
 from agents.claude_client import claude_client
@@ -18,26 +20,34 @@ class AppointmentRequestAgent(BaseAgent):
         Return your decisions as a JSON array of AppointmentAction objects.
 
         Appointment scheduling rules:
+        - An appointment is urgent if the urgency field in the AppointmentRequest is True
+        - Assume all existing appointments are NOT urgent!
+        - A clinician can only have one appointment per client at a time (i.e. no overlapping appointments)
         - The appointment must be scheduled on or after the current time
-        - Never update an existing urgent appointment
-        - Incoming urgent appointments should be scheduled to the first open time slot
-        - It is okay to update existing non-urgent appointments
-        - Non-urgent appointments should be scheduled at first available time slot that takes into consideration the time_of_day_preference and preferred_days
-        - You may create one new appointment and update zero or more existing non-urgent appointments
         - All appointments must be scheduled ON THE HOUR (e.g., 9:00, 10:00, 11:00, etc.)
         - All appointments must be between 9:00 AM and 5:00 PM (business hours)
         - All appointments must be 50 minutes in duration
+        - The response must be a JSON format with no new lines or extra spaces
+    
+        Handle urgent appointments with the following rules:
+        - Urgent appointments should be always scheduled as close to the current time as possible
+        - If an existing appointment is blocking a potential urgent appointment time slot, identify the next available time slot and schedule the existing appointment there (i.e. update the existing appointment)
 
-        AppointmentAction schema:
-        {
-            "action": "create" or "update",
-            "start_time": "ISO datetime string (must be on the hour between 9 AM and 5 PM)",
-            "client_id": integer,
-            "clinician_id": integer,
-            "appointment_id": integer (only required for update actions)
-        }
+        Handle non-urgent appointments with the following rules:
+        - The appointment must be booked by preference
+        - Book at the soonest available time in the future
+        - Never update an existing urgent appointment
 
-        Return a JSON array of AppointmentAction objects.
+        You should return a list of AppointmentAction objects. With the following format:
+        [
+            {
+                "action": "create" or "update",
+                "start_time": "ISO datetime string (must be on the hour between 9 AM and 5 PM)",
+                "client_id": integer,
+                "clinician_id": integer,
+                "appointment_id": integer (only required for update actions)
+            }
+        ]
         """
 
     def infer(self, request: AppointmentRequest) -> list[AppointmentAction]:
@@ -45,14 +55,16 @@ class AppointmentRequestAgent(BaseAgent):
         available_time_slots = self.get_available_time_slots(request.clinician_id)
 
         prompt = f"""
+        The current time is {timezone.now().strftime("%Y-%m-%d %H:%M:%S")}.
         Given the following appointment request and available time slots, generate a list of actions to take to accommodate the appointment.
         The current appointment request is: {request.__str__()}
         The following time slots are available:
         {available_time_slots}
         """
+        print(prompt)
 
         output = claude_client.messages.create(
-            model="claude-3-5-haiku-20241022",
+            model="claude-3-7-sonnet-latest",
             max_tokens=1024,
             system=self.system_prompt,
             messages=[
@@ -60,47 +72,48 @@ class AppointmentRequestAgent(BaseAgent):
             ]
         ).content[0].text
 
+        print(output)
+
         # Parse the JSON output to get AppointmentAction objects
         try:
-            actions_data = json.loads(output)
-            if not isinstance(actions_data, list):
-                actions_data = [actions_data]
-            
-            # Convert to AppointmentAction objects
-            actions = []
-            for action_data in actions_data:
-                action = AppointmentAction(**action_data)
-                actions.append(action)
-            
-            return actions
-            
+            actions_data = self.extract_json_array_from_claude(output)
+
+            print(actions_data)
+
+            self.execute_actions(actions_data)
+
         except json.JSONDecodeError as e:
             raise ValueError(f"Failed to parse JSON output from Claude: {e}")
         except Exception as e:
             raise ValueError(f"Failed to create AppointmentAction objects: {e}")
 
+        return actions_data
+   
     def execute_actions(self, actions: list[AppointmentAction]) -> list[AppointmentResult]:
         """Execute the list of AppointmentAction objects on the appointments database."""
         results = []
         
         for action in actions:
             if action.action == "create":
+                # Get the Client and User objects
+                client = Client.objects.get(id=action.client_id)
+                clinician = User.objects.get(id=action.clinician_id)
+                
                 # Create a new appointment
                 appointment = Appointment.objects.create(
-                    client_id=action.client_id,
-                    clinician_id=action.clinician_id,
+                    client=client,
+                    clinician=clinician,
                     start_time=parse_datetime(action.start_time),
-                    end_time=parse_datetime(action.start_time) + timedelta(minutes=50)
                 )
                 
                 results.append(AppointmentResult(
                     action_taken="created",
                     appointment={
                         "id": appointment.id,
-                        "client_id": appointment.client_id,
-                        "clinician_id": appointment.clinician_id,
+                        "client_id": appointment.client.id,
+                        "clinician_id": appointment.clinician.id,
                         "start_time": appointment.start_time.isoformat(),
-                        "end_time": appointment.end_time.isoformat()
+                        "duration_in_minutes": appointment.duration_in_minutes
                     }
                 ))
                 
@@ -111,20 +124,19 @@ class AppointmentRequestAgent(BaseAgent):
                 
                 appointment = Appointment.objects.get(id=action.appointment_id)
                 appointment.start_time = parse_datetime(action.start_time)
-                appointment.end_time = parse_datetime(action.start_time) + timedelta(minutes=50)
                 appointment.save()
-                
+
                 results.append(AppointmentResult(
                     action_taken="updated",
                     appointment={
                         "id": appointment.id,
-                        "client_id": appointment.client_id,
-                        "clinician_id": appointment.clinician_id,
+                        "client_id": appointment.client.id,
+                        "clinician_id": appointment.clinician.id,
                         "start_time": appointment.start_time.isoformat(),
-                        "end_time": appointment.end_time.isoformat()
+                        "duration_in_minutes": appointment.duration_in_minutes
                     }
                 ))
-        
+
         return results
 
     def get_weekly_appointments(self, clinician_id: int) -> list[Appointment]:
@@ -189,7 +201,23 @@ class AppointmentRequestAgent(BaseAgent):
             
             current_slot += timedelta(hours=1)
         
-        return available_slots
+        # Convert datetime objects to human readable strings
+        readable_slots = [slot.strftime("%A, %B %d at %I:%M %p") for slot in available_slots]
+        return readable_slots
 
-    
-        
+    def extract_json_array_from_claude(self, response_text: str) -> list[AppointmentAction]:
+        """
+        Extract the first valid JSON array from the Claude response and convert it into AppointmentAction objects.
+        """
+        # Regex to extract only the first top-level array of objects
+        match = re.search(r'(\[\s*{.*?}\s*\])', response_text, re.DOTALL)
+        if not match:
+            raise ValueError("No JSON array found in response")
+
+        json_str = match.group(1)
+
+        try:
+            raw_list = json.loads(json_str)
+            return [AppointmentAction.model_validate(obj) for obj in raw_list]
+        except Exception as e:
+            raise ValueError(f"Error parsing JSON array: {e}")
